@@ -35,15 +35,18 @@ any CLI argument has the following format: --<option-name>\[=<option-value>\]
 | --- | --- |
 | host | the target RouterOS host (an IPv4 address) |
 | port | can be either __8728__ or 8729 (for the last one, I've yet to support secure data exchange) |
+| name | the user-name (mandatory for the authentication procedure) |
+| password | the password (currently, it is also mandatory for the authentication procedure) |
 | command | the RouterOS CLI version of the command that is to be executed. The first character has to be _/_ and any white space will be substituted with the slash character |
 | attribute-name | a command attribute |
 | attribute-value | the value corresponding to the attribute |
 
 multiple attribute-name / attribute-value pairs can be specified. An attribute value cannot be specified without the corresponding name.
-Moreover, attribute may be value-less
+Moreover, an attribute may be value-less
 
 ### some random notes (to be expanded)
 
 - the naming convention for the source code is a bit mixed-up, for a purpose. Generally, anything that starts with a mikro\_ prefix is related to the socket-based protocol or the CLI;
 - phy\_ names are related to the socket interface (I've used the same module that I've implemented for my main AMR project but, I've adapted it a bit);
 - generic macros and/or functions do not have any particular prefix
+- the log prefix for decoded words is **mikro\_W:**

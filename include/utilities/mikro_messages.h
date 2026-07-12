@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 01-07-2026 */
+/* Last modification date: 12-07-2026 */
 /**************************************/
 
 /**
@@ -18,10 +18,11 @@
 enum mikro_msg_ind {
                     // errors
                     mikro_ind_heapFail,
-                    mikro_ind_wrCLIOpt, /**< wrong CLI option */
-                    mikro_ind_unCLIVal, /**< unexpected CLI option value */
+                    mikro_ind_wrCLIOpt,   /**< wrong CLI option */
+                    mikro_ind_unCLIVal,   /**< unexpected CLI option value */
                     mikro_ind_wrI,
                     mikro_ind_incChArr,
+                    mikro_ind_noAuthData, /**< lack of authentication data */
                     // notices
                     mikro_num_msg /*< number of messages */
                    };

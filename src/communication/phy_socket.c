@@ -1,6 +1,6 @@
 /*************************************/
 /* Author: Pavlo Nykolyn             */
-/* Last modification date 05/02/2026 */
+/* Last modification date 06/07/2026 */
 /*************************************/
 
 #include <stdio.h>
@@ -228,7 +228,7 @@ phy_Sck_socketD phy_Sck_openConnection(const char* const phy_sck_strHostName, co
             if (phy_sck_cd) {
                static const char funcName[] = "connect";
                err_Sys_printMsg(strlen(funcName), funcName,
-                                phy_sck_newCd);
+                                phy_sck_cd);
             }
             if (phy_sck_newCd)
                phy_sck_cd = phy_sck_newCd; // now it refers to poll

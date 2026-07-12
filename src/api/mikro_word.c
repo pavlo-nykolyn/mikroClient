@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 03-07-2026 */
+/* Last modification date: 12-07-2026 */
 /**************************************/
 
 #include <stdlib.h>
@@ -24,18 +24,37 @@
 
 const by mikro_Word_emptyW = (LOW);
 
+static const char mikro_word_arr_repInd[mikro_numRepT][8] = {[mikro_rt_done] = {'!', 'd', 'o', 'n', 'e'},
+                                                             [mikro_rt_re] = {'!', 'r', 'e'},
+                                                             [mikro_rt_trap] = {'!', 't', 'r', 'a', 'p'},
+                                                             [mikro_rt_fatal] = {'!', 'f', 'a', 't', 'a', 'l'}
+                                                            };
+
 struct mikro_word {
 // type
-   enum mikro_word_types type;
+   enum mikro_Word_types type;
 // buffer size
    size_t sz;
 // encoded buffer
    by* pBuf;
-// decoded string
-   mikro_String* pDecStr;
-// value offset
-   size_t valOff;
 };
+
+static enum mikro_Word_replyTypes mikro_word_getRepType(const size_t szTarg, const char targ[static szTarg])
+{
+   enum mikro_Word_replyTypes rType = mikro_numRepT;
+   // whilst szTarg may be greater than the reference string, two conditions ensure that a buffer overflow will not occur:
+   // - a reply that is not a type indicator never starts with a ! character;
+   // - the second character of a reply indicator is never equal to another character placed in the same position of any other remaining indicators
+   if (!memcmp(targ, mikro_word_arr_repInd[mikro_rt_done], szTarg))
+      rType = mikro_rt_done;
+   else if (!memcmp(targ, mikro_word_arr_repInd[mikro_rt_re], szTarg))
+      rType = mikro_rt_re;
+   else if (!memcmp(targ, mikro_word_arr_repInd[mikro_rt_trap], szTarg))
+      rType = mikro_rt_trap;
+   else if (!memcmp(targ, mikro_word_arr_repInd[mikro_rt_fatal], szTarg))
+      rType = mikro_rt_fatal;
+   return rType;
+}
 
 static by* mikro_word_alloc(const size_t sz)
 {
@@ -99,32 +118,29 @@ size_t mikro_Word_decodeSz(const by* restrict mikro_encSz,
    size_t wLen = 0;
    by* pLen = (by*) &wLen;
    unsigned nBytes = 0; // how many bytes do encode the length
-   unsigned lOff = 0; // offset within the context of the byte sequence of wLen
-                      // whenever the offset is defined, I'm making the assumption
-                      // the the amount of bytes used to define any value of type
-                      // size_t is eight
    bool fSkip = false; // is the byte number indicator to be skipped?
    by lenInd = LOW; // a length indicator that is to be inhibited during decoding
    by tmp[MIKRO_WORD_MAXLEN_SZ - 1] = {LOW}; // the maximum amount of bytes used to encode the length cannot exceed four units
-   if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_2)) & (MIKRO_WORD_LEN_IND_2))) {
-      nBytes = 2;
-      lenInd = MIKRO_WORD_LEN_IND_2;
+   if (*mikro_encSz & MSB) {
+      if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_2)) & (MIKRO_WORD_LEN_IND_2))) {
+         nBytes = 2;
+         lenInd = MIKRO_WORD_LEN_IND_2;
+      }
+      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_3)) & (MIKRO_WORD_LEN_IND_3))) {
+         nBytes = 3;
+         lenInd = MIKRO_WORD_LEN_IND_3;
+      }
+      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_4)) & (MIKRO_WORD_LEN_IND_4))) {
+         nBytes = 4;
+         lenInd = MIKRO_WORD_LEN_IND_4;
+      }
+      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_5)) & (MIKRO_WORD_LEN_IND_5))) {
+         nBytes = 4;
+         fSkip = true;
+      }
    }
-   else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_3)) & (MIKRO_WORD_LEN_IND_3))) {
-      nBytes = 3;
-      lenInd = MIKRO_WORD_LEN_IND_3;
-   }
-   else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_4)) & (MIKRO_WORD_LEN_IND_4))) {
-      nBytes = 4;
-      lenInd = MIKRO_WORD_LEN_IND_4;
-   }
-   else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_5)) & (MIKRO_WORD_LEN_IND_5))) {
-      nBytes = 4;
-      fSkip = true;
-   }
-   else {
+   else
       nBytes = 1;
-   }
    const size_t idx = sizeof(size_t) - nBytes;
    memcpy(pLen + idx, mikro_encSz + (fSkip ? 1 : 0), nBytes);
    if (lenInd)
@@ -134,6 +150,29 @@ size_t mikro_Word_decodeSz(const by* restrict mikro_encSz,
    if (mikro_pBytes)
       *mikro_pBytes = nBytes;
    return wLen;
+}
+
+void mikro_Word_decode(const size_t mikro_senSz, const by mikro_sen[static mikro_senSz],
+                       int* restrict mikro_pType)
+{
+   if (mikro_senSz &&
+       *mikro_sen) { // this condition is needed to avoid processing the empty word
+      unsigned nBytes = 0;
+      const size_t encSz = mikro_Word_decodeSz(mikro_sen,
+                                               &nBytes);
+      const size_t remSz = mikro_senSz - encSz - nBytes;
+      char msg[encSz + 1];
+      memcpy(msg, mikro_sen + nBytes, encSz);
+      msg[encSz] = LOW;
+      mikro_Log_show(stdout, "mikro_W", msg);
+      if (mikro_pType &&
+          (*mikro_pType == mikro_numRepT))
+         // even when multiple words are part of the reply sentence, only the first one will "tag" the sentence
+         // this is very useful for special types like !trap and !fatal
+         *mikro_pType = mikro_word_getRepType(encSz, msg);
+      mikro_Word_decode(remSz, mikro_sen + encSz + nBytes,
+                        mikro_pType);
+   }
 }
 
 mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,

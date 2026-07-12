@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 02-07-2026 */
+/* Last modification date: 13-07-2026 */
 /**************************************/
 
 #include "byteUtilities.h"
@@ -11,7 +11,7 @@ bool isBE(void);
 void reverse(const size_t sz, by buf[static sz])
 {
    unsigned mark = 0;
-   unsigned remaining = sz - mark; // inhibits a warning
+   unsigned remaining = sz - mark - 1; // inhibits a warning
    while (mark < remaining) {
       by tmp = buf[mark];
       buf[mark] = buf[remaining];
