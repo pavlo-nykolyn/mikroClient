@@ -6,5 +6,6 @@
 #include "mikro_logging.h"
 #include "mikro_errors.h"
 #include "mikro_messages.h"
+#include "generic.h"
 
 #endif // MIKRO_WRAPPER_UTILITIES_H

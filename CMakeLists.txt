@@ -63,7 +63,8 @@ if(IS_DIRECTORY ${HEADER_LOCATION} AND IS_DIRECTORY ${SRC_LOCATION})
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_wrapper_utilities.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_logging.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_errors.h
-                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_messages.h)
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_messages.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/generic.h)
    add_library(mikro_word OBJECT)
    target_include_directories(mikro_word
                               PRIVATE ${HEADER_SUBLOCATION_UTILITIES}
@@ -108,7 +109,8 @@ if(IS_DIRECTORY ${HEADER_LOCATION} AND IS_DIRECTORY ${SRC_LOCATION})
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_wrapper_utilities.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_logging.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_errors.h
-                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_messages.h)
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_messages.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/generic.h)
    add_library(byteUtilities OBJECT)
    target_include_directories(byteUtilities
                               PRIVATE ${HEADER_SUBLOCATION_UTILITIES}
@@ -120,7 +122,12 @@ if(IS_DIRECTORY ${HEADER_LOCATION} AND IS_DIRECTORY ${SRC_LOCATION})
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/byteUtilities.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/byteDefs.h
                   PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/iterators.h
-                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/header_wrapper.h)
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_wrapper_utilities.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_logging.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_errors.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/mikro_messages.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/header_wrapper.h
+                  PRIVATE ${HEADER_SUBLOCATION_UTILITIES}/generic.h)
    add_library(mikro_messages OBJECT)
    target_include_directories(mikro_messages
                               PRIVATE ${HEADER_SUBLOCATION_UTILITIES}

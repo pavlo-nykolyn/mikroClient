@@ -1,14 +1,13 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 12-07-2026 */
+/* Last modification date: 15-07-2026 */
 /**************************************/
 
 #include <stdlib.h>
 #include <stdint.h>
 #include "mikro_word.h"
-#include "mikro_wrapper_utilities.h"
 #include "iterators.h"
-#include "generic.h"
+#include "mikro_wrapper_utilities.h"
 
 // indicators (the most significant bits of the most significant byte) that determine the amount of bytes that encode a word length
 #define MIKRO_WORD_LEN_IND_2 (NIB_H_8) // two bytes
@@ -22,7 +21,7 @@
 #define MIKRO_WORD_SLASH ((NIB_H_2) | (NIB_L_F))
 #define MIKRO_WORD_EQ    ((NIB_H_3) | (NIB_L_D))
 
-const by mikro_Word_emptyW = (LOW);
+const by_t mikro_Word_emptyW = (LOW);
 
 static const char mikro_word_arr_repInd[mikro_numRepT][8] = {[mikro_rt_done] = {'!', 'd', 'o', 'n', 'e'},
                                                              [mikro_rt_re] = {'!', 'r', 'e'},
@@ -36,7 +35,7 @@ struct mikro_word {
 // buffer size
    size_t sz;
 // encoded buffer
-   by* pBuf;
+   by_t* pBuf;
 };
 
 static enum mikro_Word_replyTypes mikro_word_getRepType(const size_t szTarg, const char targ[static szTarg])
@@ -56,24 +55,14 @@ static enum mikro_Word_replyTypes mikro_word_getRepType(const size_t szTarg, con
    return rType;
 }
 
-static by* mikro_word_alloc(const size_t sz)
-{
-   by* pBuf = calloc(sz, sizeof(by));
-   if (!pBuf) {
-      mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
-      exit(EXIT_FAILURE);
-   }
-   return pBuf;
-}
-
 // assuming the encSz has a length of five bytes (the maximum length mandated by the specification)
 static unsigned mikro_word_encodeSz(const size_t sz,
-                                    by encSz[static MIKRO_WORD_MAXLEN_SZ])
+                                    by_t encSz[static MIKRO_WORD_MAXLEN_SZ])
 {
    unsigned encodingLen = 0;
    unsigned szLen = 0;
    unsigned szOff = 0; // needed whenever the underlying representation is big-endian
-   by encLenInd = LOW;
+   by_t encLenInd = LOW;
    if (sz <= 127) {
       encodingLen = 1;
       szOff = isBE() ? 7 : 0;
@@ -98,7 +87,7 @@ static unsigned mikro_word_encodeSz(const size_t sz,
       szOff = isBE() ? 4 : 3;
       encLenInd = MIKRO_WORD_LEN_IND_5;
    }
-   by* fstBy = (by*) &sz;
+   by_t* fstBy = (by_t*) &sz;
    if (szOff &&
        szOff < 4) {
       memcpy(encSz + 1, fstBy, szOff + 1);
@@ -112,15 +101,15 @@ static unsigned mikro_word_encodeSz(const size_t sz,
    return encodingLen;
 }
 
-size_t mikro_Word_decodeSz(const by* restrict mikro_encSz,
+size_t mikro_Word_decodeSz(const by_t* restrict mikro_encSz,
                            unsigned* restrict mikro_pBytes)
 {
    size_t wLen = 0;
-   by* pLen = (by*) &wLen;
+   by_t* pLen = (by_t*) &wLen;
    unsigned nBytes = 0; // how many bytes do encode the length
    bool fSkip = false; // is the byte number indicator to be skipped?
-   by lenInd = LOW; // a length indicator that is to be inhibited during decoding
-   by tmp[MIKRO_WORD_MAXLEN_SZ - 1] = {LOW}; // the maximum amount of bytes used to encode the length cannot exceed four units
+   by_t lenInd = LOW; // a length indicator that is to be inhibited during decoding
+   by_t tmp[MIKRO_WORD_MAXLEN_SZ - 1] = {LOW}; // the maximum amount of bytes used to encode the length cannot exceed four units
    if (*mikro_encSz & MSB) {
       if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_2)) & (MIKRO_WORD_LEN_IND_2))) {
          nBytes = 2;
@@ -152,7 +141,7 @@ size_t mikro_Word_decodeSz(const by* restrict mikro_encSz,
    return wLen;
 }
 
-void mikro_Word_decode(const size_t mikro_senSz, const by mikro_sen[static mikro_senSz],
+void mikro_Word_decode(const size_t mikro_senSz, const by_t mikro_sen[static mikro_senSz],
                        int* restrict mikro_pType)
 {
    if (mikro_senSz &&
@@ -164,7 +153,7 @@ void mikro_Word_decode(const size_t mikro_senSz, const by mikro_sen[static mikro
       char msg[encSz + 1];
       memcpy(msg, mikro_sen + nBytes, encSz);
       msg[encSz] = LOW;
-      mikro_Log_show(stdout, "mikro_W", msg);
+      mikro_Log_show(stdout, "mikro_W:", msg);
       if (mikro_pType &&
           (*mikro_pType == mikro_numRepT))
          // even when multiple words are part of the reply sentence, only the first one will "tag" the sentence
@@ -175,15 +164,15 @@ void mikro_Word_decode(const size_t mikro_senSz, const by mikro_sen[static mikro
    }
 }
 
-mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,
-                              const mikro_String* restrict mikro_pStr_value,
-                              const int mikro_wT,
-                              int* restrict mikro_pCd)
+mikro_Word_t* mikro_Word_encode(const mikro_String_t* restrict mikro_pStr_key,
+                                const mikro_String_t* restrict mikro_pStr_value,
+                                const int mikro_wT,
+                                int* restrict mikro_pCd)
 {
    int cd = mikro_noError;
-   by encSz[MIKRO_WORD_MAXLEN_SZ] = {LOW};
+   by_t encSz[MIKRO_WORD_MAXLEN_SZ] = {LOW};
    unsigned lenEncSz = 0;
-   mikro_Word* mikro_pW = calloc(1, sizeof(struct mikro_word));
+   mikro_Word_t* mikro_pW = (mikro_Word_t*) calloc(1, sizeof(struct mikro_word));
    if (!mikro_pW) {
       mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
       exit(EXIT_FAILURE);
@@ -192,7 +181,7 @@ mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,
       if (!mikro_pStr_key) {
          mikro_Log_append(stdout, __LINE__ - 1, "progErr", mikro_messages[mikro_ind_wrI]);
          cd = mikro_ind_wrI;
-         goto MIKRO_WORD_CREATE_EXIT;
+         goto MIKRO_WORD_ENCODE_EXIT;
       }
       mikro_pW -> sz = mikro_String_getLen(mikro_pStr_key);
    }
@@ -203,7 +192,7 @@ mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,
       if (!mikro_pStr_key) {
          mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_wrI]);
          cd = mikro_ind_wrI;
-         goto MIKRO_WORD_CREATE_EXIT;
+         goto MIKRO_WORD_ENCODE_EXIT;
       }
       mikro_pW -> sz = mikro_String_getLen(mikro_pStr_key) +
                        mikro_String_getLen(mikro_pStr_value) +
@@ -212,11 +201,7 @@ mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,
    lenEncSz = mikro_word_encodeSz(mikro_pW -> sz,
                                   encSz);
    mikro_pW -> sz += lenEncSz;
-   mikro_pW -> pBuf = calloc(mikro_pW -> sz, sizeof(by));
-   if (!(mikro_pW -> pBuf)) {
-      mikro_Log_append(stdout, __LINE__ - 1, "progErr", mikro_messages[mikro_ind_heapFail]);
-      exit(EXIT_FAILURE);
-   }
+   mikro_pW -> pBuf = allocSeq(mikro_pW -> sz);
    memcpy(mikro_pW -> pBuf, encSz + MIKRO_WORD_MAXLEN_SZ - lenEncSz, lenEncSz);
    if (mikro_wT == mikro_wt_command) {
       memcpy(mikro_pW -> pBuf + lenEncSz, mikro_String_getPChArr(mikro_pStr_key), mikro_String_getLen(mikro_pStr_key));
@@ -238,19 +223,33 @@ mikro_Word* mikro_Word_encode(const mikro_String* restrict mikro_pStr_key,
          memcpy((mikro_pW -> pBuf) + lenEncSz + szKey + 2, pChArr, mikro_String_getLen(mikro_pStr_value));
    }
    viewBytes(mikro_pW -> sz, mikro_pW -> pBuf);
-   MIKRO_WORD_CREATE_EXIT:
+   MIKRO_WORD_ENCODE_EXIT:
+   if (cd &&
+       mikro_pW)
+      mikro_Word_destroy(&mikro_pW);
    if (mikro_pCd)
       *mikro_pCd = cd;
    return mikro_pW;
 }
 
-const by* mikro_Word_getPBuf(const mikro_Word* restrict mikro_pW)
+void mikro_Word_destroy(mikro_Word_t** mikro_addrW)
+{
+   if (*mikro_addrW) {
+      mikro_Word_t* pW = *mikro_addrW;
+      if (pW -> pBuf)
+         freeSeq(&(pW -> pBuf));
+      free(*mikro_addrW);
+      *mikro_addrW = INV_PNT;
+   }
+}
+
+const by_t* mikro_Word_getPBuf(const mikro_Word_t* restrict mikro_pW)
 {
    return mikro_pW ? mikro_pW -> pBuf
                    : INV_PNT;
 }
 
-const size_t mikro_Word_getSz(const mikro_Word* restrict mikro_pW)
+const size_t mikro_Word_getSz(const mikro_Word_t* restrict mikro_pW)
 {
    return mikro_pW ? mikro_pW -> sz
                    : 0ULL;

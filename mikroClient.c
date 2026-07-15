@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 13-07-2026 */
+/* Last modification date: 16-07-2026 */
 /**************************************/
 
 #include <stdio.h>
@@ -19,6 +19,9 @@ static const char mikro_loginCmd[] = "/login"; // an implicit command run as the
 
 // a sequence of keys that are to be used by the CLI interface
 enum mikro_keyList {
+                    mikro_key_aDir, /**< directory containing authentication data used during the TLS handshake */
+                    mikro_key_keyF, /**< file name associated with the key used during the TLS handshake */
+                    mikro_key_crtF, /**< file name associated with the certificate used during the TLS handshake */
                     mikro_key_host, /**< an IPv4 address */
                     mikro_key_port, /**< TCP port */
                     mikro_key_name, /**< user name */
@@ -30,6 +33,9 @@ enum mikro_keyList {
                    };
 
 static const char* mikro_expected_keys[mikro_numKeys] = {
+                                                         [mikro_key_aDir] = "authentication-data-directory",
+                                                         [mikro_key_keyF] = "key-file",
+                                                         [mikro_key_crtF] = "crt-file",
                                                          [mikro_key_host] = "host",
                                                          [mikro_key_port] = "port",
                                                          [mikro_key_name] = "name",
@@ -39,28 +45,18 @@ static const char* mikro_expected_keys[mikro_numKeys] = {
                                                          [mikro_key_attV] = "attribute-value"
                                                         };
 
-// depending on how sophisticated the program will become, I may move these to functions to the byteUtilities module
-// just because they belong there
-static void mikro_freeByteSeq(by** mikro_addrSeq)
+// provides a realloc-like behaviour (only if oldSz is non-zero)
+static by_t* mikro_allocByteSeq(const size_t newSz,
+                                const size_t oldSz, by_t** pCurrSeq)
 {
-   if (*mikro_addrSeq) {
-      free(*mikro_addrSeq);
-      *mikro_addrSeq = INV_PNT;
-   }
-}
-
-// 
-static by* mikro_allocByteSeq(const size_t newSz,
-                              const size_t oldSz, by** pCurrSeq)
-{
-   by* pSeq = calloc(newSz, sizeof(by));
+   by_t* pSeq = calloc(newSz, sizeof(by_t));
    if (!pSeq) {
       mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
       exit(EXIT_FAILURE);
    }
    if (oldSz) {
       memcpy(pSeq, *pCurrSeq, oldSz);
-      mikro_freeByteSeq(pCurrSeq);
+      freeSeq(pCurrSeq);
    }
    return pSeq;
 }
@@ -71,7 +67,7 @@ static by* mikro_allocByteSeq(const size_t newSz,
 // if mikro_pCd is not a valid reference to an integer variable, the caller will not obtain information regarding an error condition.
 // In this case, the return value will be zero
 static size_t mikro_readSeq(const phy_Sck_socketD mikro_sDesc,
-                            by** mikro_pBuf,
+                            by_t** mikro_pBuf,
                             const unsigned mikro_timeout,
                             int* restrict mikro_pCd)
 {
@@ -112,7 +108,13 @@ static size_t mikro_readSeq(const phy_Sck_socketD mikro_sDesc,
 static enum mikro_keyList mikro_chkKey(const char* restrict mikro_pChArr)
 {
    enum mikro_keyList kInd = mikro_numKeys;
-   if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_host]))
+   if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_keyF]))
+      kInd = mikro_key_keyF;
+   else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_crtF]))
+      kInd = mikro_key_crtF;
+   else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_aDir]))
+      kInd = mikro_key_aDir;
+   else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_host]))
       kInd = mikro_key_host;
    else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_port]))
       kInd = mikro_key_port;
@@ -132,34 +134,54 @@ static enum mikro_keyList mikro_chkKey(const char* restrict mikro_pChArr)
 int main(int argc, void** argv)
 {
    int cd = mikro_noError;
-   const mikro_FastString loginCmdFS = {.pChArr = mikro_loginCmd,
-                                        .len = strlen(mikro_loginCmd)};
-   const mikro_String* loginS = mikro_String_create(&loginCmdFS,
-                                                    &cd);
+   unsigned itemCnt = 0; // item counter. Each time an item gets added to arrItems, the counter will be increased by one
+   unsigned attrsCnt = 0; // attribute counter. Any attribute-name occurrence will be added to the counter
+   mikro_FastString_t loginCmdFS = {.pChArr = mikro_loginCmd,
+                                    .len = strlen(mikro_loginCmd)}; // an external string that references the authentication command
+   /* a couple of variables that use heap memory */
+   by_t* pBuf = INV_PNT; // the read buffer
+   mikro_String_t* loginS = INV_PNT; // the string that encodes the authentication command ...
+   mikro_Word_t* loginW = INV_PNT; // ... and the corresponding word
+   mikro_Cli_item_t** arrItems = INV_PNT; // an array of CLI-based items
+   // COMMAND
+   mikro_Word_t* commW = INV_PNT; // the command word
+   // ENDPOINT
+   const mikro_String_t* host = INV_PNT; // the string containing the host address
+   const mikro_String_t* port = INV_PNT; // the string containing the port address
+   // AUTHENTICATION DATA
+   mikro_Word_t* userW = INV_PNT; // the user name word
+   mikro_Word_t* passW = INV_PNT; // the password word
+   mikro_String_t* aDir = INV_PNT; // the directory containing authentication data used during the TLS handshake
+   mikro_String_t* keyF = INV_PNT; // the file name for the key used during the TLS handshake
+   mikro_String_t* crtF = INV_PNT; // the file name for the certificate used during the TLS handshake
+   // ATTRIBUTES
+   mikro_Word_t** arrAttrWords = INV_PNT; // an array containing attribute words
+   /* defining a set of variables used to store information passed down to the RouterOS host */
+   loginS = mikro_String_create(&loginCmdFS,
+                                &cd);
    if (cd)
-      exit(EXIT_FAILURE);
-   const mikro_Word* loginW = mikro_Word_encode(loginS,
-                                                INV_PNT,
-                                                mikro_wt_command,
-                                                &cd);
+      goto MIKRO_CLEANUP;
+   loginW = mikro_Word_encode(loginS,
+                              INV_PNT,
+                              mikro_wt_command,
+                              &cd);
    if (cd)
-      exit(EXIT_FAILURE);
-   mikro_Cli_item** arrItems = calloc(argc - 1, sizeof(mikro_Cli_item*));
+      goto MIKRO_CLEANUP;
+   // an array of CLI options that refere to attributes, API attributes and queries 
+   arrItems = calloc(argc - 1, sizeof(mikro_Cli_item_t*));
    if (!arrItems) {
       mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
       exit(EXIT_FAILURE);
    }
-   unsigned itemCnt = 0; // item counter. Each time an item gets added to arrItems, the counter will be increased by one
-   unsigned attrsCnt = 0; // attribute counter. Any attribute-name occurrence will be added to the counter
    enum mikro_keyList prevKInd = mikro_numKeys; // key indicator of the previously extracted input argument
    /* retrieving the CLI arguments */
    ITER_SGN_I(1, argc) {
       enum mikro_keyList kInd = mikro_numKeys;
       printf("[%d] argv=%s\n", i, (char*) argv[i]);
-      mikro_FastString concatArg = {.len = strlen(argv[i]),
-                                    .pChArr = argv[i]};
-      mikro_Cli_item* pItem = mikro_Cli_parse_arg(&concatArg,
-                                                  &cd);
+      mikro_FastString_t concatArg = {.len = strlen(argv[i]),
+                                      .pChArr = argv[i]};
+      mikro_Cli_item_t* pItem = mikro_Cli_parse_arg(&concatArg,
+                                                    &cd);
       if (!pItem)
          return EXIT_FAILURE;
       kInd = mikro_chkKey(mikro_String_getPChArr(mikro_Cli_getArgName(pItem)));
@@ -178,32 +200,24 @@ int main(int argc, void** argv)
          if (kInd == mikro_key_attN)
             attrsCnt += 1;
          *(arrItems + i - 1) = pItem;
+         itemCnt ++;
       }
       prevKInd = kInd;
    }
-   /* obtaining the various parameters */
-   // COMMAND
-   mikro_Word* comm = INV_PNT;
-   // ENDPOINT
-   const mikro_String* host = INV_PNT;
-   const mikro_String* port = INV_PNT;
-   // AUTHENTICATION DATA
-   const mikro_Word* userW = INV_PNT;
-   const mikro_Word* passW = INV_PNT;
-   // ATTRIBUTES
-   mikro_Word** arrAttrWords = calloc(attrsCnt, sizeof(mikro_Word*));
+   /* creating the various parameters */
+   arrAttrWords = calloc(attrsCnt, sizeof(mikro_Word_t*));
    if (!arrAttrWords) {
       mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
       exit(EXIT_FAILURE);
    }
-   /* keep track of a name-value pair */
+   /* keeping track of a name-value pair */
    /* ---------- */
-   mikro_Cli_item* pName = INV_PNT;
-   mikro_Cli_item* pVal = INV_PNT;
+   mikro_Cli_item_t* pName = INV_PNT;
+   mikro_Cli_item_t* pVal = INV_PNT;
    /* ---------- */
    unsigned attrWCnt = 0; // counter for attribute words
    ITER_UNS_I(1, argc) {
-      mikro_Cli_item* pItem = *(arrItems + i - 1);
+      mikro_Cli_item_t* pItem = *(arrItems + i - 1);
       enum mikro_keyList kInd = mikro_chkKey(mikro_String_getPChArr(mikro_Cli_getArgName(pItem)));
       if (kInd == mikro_key_attN) {
          if (pName) {
@@ -222,23 +236,29 @@ int main(int argc, void** argv)
       else if (kInd == mikro_key_attV)
          pVal = pItem;
       else if (kInd == mikro_key_comm) {
-         comm = mikro_Word_encode(mikro_Cli_getArgValue(pItem),
-                                  INV_PNT,
-                                  mikro_wt_command,
-                                  &cd);
+         commW = mikro_Word_encode(mikro_Cli_getArgValue(pItem),
+                                   INV_PNT,
+                                   mikro_wt_command,
+                                   &cd);
          if (cd)
             exit(EXIT_FAILURE);
       }
+      else if (kInd == mikro_key_aDir)
+         aDir = (mikro_String_t*) IDEM_INT(mikro_Cli_getArgValue(pItem));
+      else if (kInd == mikro_key_keyF)
+         keyF = (mikro_String_t*) IDEM_INT(mikro_Cli_getArgValue(pItem));
+      else if (kInd == mikro_key_crtF)
+         crtF = (mikro_String_t*) IDEM_INT(mikro_Cli_getArgValue(pItem));
       else if (kInd == mikro_key_host)
          host = mikro_Cli_getArgValue(pItem);
       else if (kInd == mikro_key_port)
          port = mikro_Cli_getArgValue(pItem);
       else if (kInd == mikro_key_name ||
                kInd == mikro_key_pass) {
-         mikro_Word* tmpW = mikro_Word_encode(mikro_Cli_getArgName(pItem),
-                                              mikro_Cli_getArgValue(pItem),
-                                              mikro_wt_attribute,
-                                              &cd);
+         mikro_Word_t* tmpW = mikro_Word_encode(mikro_Cli_getArgName(pItem),
+                                                mikro_Cli_getArgValue(pItem),
+                                                mikro_wt_attribute,
+                                                &cd);
          if (kInd == mikro_key_name)
             userW = tmpW;
          else if (kInd == mikro_key_pass)
@@ -291,7 +311,6 @@ int main(int argc, void** argv)
       goto MIKRO_SOCKET_CLOSE;
    /* obtaining a response */
    int replyWType = mikro_numRepT;
-   by* pBuf = INV_PNT; // dynamically allocated during the read operation
    size_t readB = mikro_readSeq(sDesc,
                                 &pBuf,
                                 MIKRO_R_TOUT,
@@ -299,12 +318,12 @@ int main(int argc, void** argv)
    viewBytes(readB, pBuf);
    mikro_Word_decode(readB, pBuf,
                      &replyWType);
-   mikro_freeByteSeq(&pBuf); // will be reused for the command reply
+   freeSeq(&pBuf); // will be reused for the command reply
    if (replyWType == mikro_rt_done) {
       // the attribute order follows the same one of the command line arguments
       /* dispatching the command sentence */
       phy_Sck_write(sDesc,
-                    mikro_Word_getSz(comm), (void*) mikro_Word_getPBuf(comm),
+                    mikro_Word_getSz(commW), (void*) mikro_Word_getPBuf(commW),
                     &cd);
       if (cd)
          goto MIKRO_SOCKET_CLOSE;
@@ -337,5 +356,33 @@ int main(int argc, void** argv)
    cd = phy_Sck_interfaceCleanup();
    #endif
    MIKRO_CLEANUP:
+   if (loginS)
+      mikro_String_destroy(&loginS);
+   if (loginW)
+      mikro_Word_destroy(&loginW);
+   if (commW)
+      mikro_Word_destroy(&commW);
+   /*if (aDir)
+      mikro_String_destroy(&aDir);
+   if (keyF)
+      mikro_String_destroy(&keyF);
+   if (crtF)
+      mikro_String_destroy(&crtF);*/
+   if (userW)
+      mikro_Word_destroy(&userW);
+   if (passW)
+      mikro_Word_destroy(&passW);
+   if (arrAttrWords) {
+      ITER_UNS_I(0, attrsCnt)
+         mikro_Word_destroy(arrAttrWords + i);
+      free(arrAttrWords);
+   }
+   if (arrItems) {
+      ITER_UNS_I(0, itemCnt)
+         mikro_Cli_destroy_item(arrItems + i);
+      free(arrItems);
+   }
+   if (pBuf)
+      freeSeq(&pBuf);
    return EXIT_SUCCESS;
 }

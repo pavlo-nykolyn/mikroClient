@@ -13,7 +13,7 @@
 #ifndef MIKRO_MESSAGES_H
 #define MIKRO_MESSAGES_H
 
-// each integer (save the last one) can be used to index mikro_messages
+// each integer (save the last one) can bye used to index mikro_messages
 // DO NOT DEFINE NEGATIVE VALUES!!!
 enum mikro_msg_ind {
                     // errors
@@ -24,7 +24,7 @@ enum mikro_msg_ind {
                     mikro_ind_incChArr,
                     mikro_ind_noAuthData, /**< lack of authentication data */
                     // notices
-                    mikro_num_msg /*< number of messages */
+                    mikro_num_msg /*< numbyer of messages */
                    };
 
 extern const char* mikro_messages[mikro_num_msg];

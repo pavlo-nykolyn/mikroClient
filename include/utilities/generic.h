@@ -1,13 +1,13 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 26-06-2025 */
+/* Last modification date: 16-07-2025 */
 /**************************************/
 
 #ifndef GENERIC_H
 #define GENERIC_H
 
-// idempotence checks
 #define INV_PNT  ((void*) 0)
-#define IDEM_INT(obj) ((obj) & ~0) // any precision will suffice
+// idempotence (useful for inhibiting const-related compilation system warnings)
+#define IDEM_INT(obj) (((long) (obj)) & ~0)
 
 #endif // GENERIC_H

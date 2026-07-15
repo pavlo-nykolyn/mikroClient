@@ -33,6 +33,9 @@ any CLI argument has the following format: --<option-name>\[=<option-value>\]
 
 | option | value |
 | --- | --- |
+| authentication-data-dir | directory that will contain data necessary for the TLS handshake (currently unused) |
+| key-file | file name of the public key used during the TLS handshake (currently unused) |
+| crt-file | file name of the certificate used during the TLS handshake (currently unused) |
 | host | the target RouterOS host (an IPv4 address) |
 | port | can be either __8728__ or 8729 (for the last one, I've yet to support secure data exchange) |
 | name | the user-name (mandatory for the authentication procedure) |
@@ -50,3 +53,8 @@ Moreover, an attribute may be value-less
 - phy\_ names are related to the socket interface (I've used the same module that I've implemented for my main AMR project but, I've adapted it a bit);
 - generic macros and/or functions do not have any particular prefix
 - the log prefix for decoded words is **mikro\_W:**
+- the log prefix for encoded sentences is **encSent:**
+
+### architecture
+
+[Software architecture]{docs/mikrotik_api_client.md}

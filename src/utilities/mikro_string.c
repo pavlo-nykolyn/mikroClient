@@ -1,16 +1,15 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 03-07-2026 */
+/* Last modification date: 15-07-2026 */
 /**************************************/
 
 #include <stdlib.h>
 #include "mikro_string.h"
 #include "mikro_wrapper_utilities.h"
-#include "generic.h"
 
 struct mikro_string {
-   size_t len;
-   char* buf; // expected to live within the boundaries of the heap
+   size_t len; // will not include the null character
+   char* buf;
 };
 
 // mikro_string_sz will be incremented by one, given that the underlying datum is a string
@@ -25,11 +24,11 @@ static char* mikro_string_alloc(const size_t mikro_string_sz)
    return pBuf;
 }
 
-mikro_String* mikro_String_create(const mikro_FastString* const mikro_pFStr,
-                                  int* restrict mikro_pCode)
+mikro_String_t* mikro_String_create(const mikro_FastString_t* const mikro_pFStr,
+                                    int* restrict mikro_pCode)
 {
    int mikro_code = mikro_noError;
-   mikro_String* mikro_pStr = INV_PNT;
+   mikro_String_t* mikro_pStr = INV_PNT;
    if (!mikro_pFStr ||
        (mikro_pFStr -> len) == 0 ||
        !(mikro_pFStr -> pChArr)) {
@@ -43,7 +42,7 @@ mikro_String* mikro_String_create(const mikro_FastString* const mikro_pFStr,
       mikro_code = mikro_incChArr;
       goto MIKRO_STRING_CREATE_EXIT;
    }
-   mikro_pStr = (mikro_String*) calloc(1, sizeof(struct mikro_string));
+   mikro_pStr = (mikro_String_t*) calloc(1, sizeof(struct mikro_string));
    if (!mikro_pStr) {
       mikro_Log_append(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_heapFail]);
       exit(EXIT_FAILURE);
@@ -57,10 +56,10 @@ mikro_String* mikro_String_create(const mikro_FastString* const mikro_pFStr,
    return mikro_pStr;
 }
 
-void mikro_String_destroy(mikro_String** mikro_addrStr)
+void mikro_String_destroy(mikro_String_t** mikro_addrStr)
 {
    if (*mikro_addrStr) {
-      mikro_String* pStr = *mikro_addrStr;
+      mikro_String_t* pStr = *mikro_addrStr;
       free(pStr -> buf);
       pStr -> buf = INV_PNT;
       free(*mikro_addrStr);
@@ -68,13 +67,13 @@ void mikro_String_destroy(mikro_String** mikro_addrStr)
    }
 }
 
-const size_t mikro_String_getLen(const mikro_String* restrict mikro_pStr)
+const size_t mikro_String_getLen(const mikro_String_t* restrict mikro_pStr)
 {
    return mikro_pStr ? mikro_pStr -> len
                      : 0ULL;
 }
 
-const char* mikro_String_getPChArr(const mikro_String* restrict mikro_pStr)
+const char* mikro_String_getPChArr(const mikro_String_t* restrict mikro_pStr)
 {
    return mikro_pStr ? mikro_pStr -> buf
                      : INV_PNT;

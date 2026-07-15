@@ -8,7 +8,7 @@
 /**
  * \file
  * includes OS-specific header files used for error tracing purposes
- * simplifies Makefile creation by wrapping headers belonging to different operating systems
+ * simplifies Makefile creation by_t wrapping headers byelonging to different operating systems
  */
 
 #if defined __unix || defined __unix__

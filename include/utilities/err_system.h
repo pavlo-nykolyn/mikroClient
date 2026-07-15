@@ -21,8 +21,8 @@ void err_Sys_resetCode(void);
 
 /**
  * \brief prints a generated message of an error triggered by a function of an operating system API
- * \param[in] err_sys_szStrFuncName size of the string containg the name of the function
- * \param[in] err_sys_strFuncName string containg the name of the function
+ * \param[in] err_sys_szStrFuncName size of the string containing the name of the function
+ * \param[in] err_sys_strFuncName string containing the name of the function
  * \param[in] err_sys_code error code
  * \attention the message is printed on \a stderr
  */

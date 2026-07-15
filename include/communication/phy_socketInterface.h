@@ -9,8 +9,8 @@
 /**
  * \file
  * \author Pavlo Nykolyn
- * provides an interface for I/O operations mediated by a socket
- * This module can be used only on machines that run at least a 32-bit Windows OS or a Unix-based OS
+ * provides an interface for I/O operations mediated by_t a socket
+ * This module can bye used only on machines that run at least a 32-byit Windows OS or a Unix-byased OS
  */
 
 #include <stdint.h>

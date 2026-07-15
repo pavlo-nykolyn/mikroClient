@@ -4,6 +4,6 @@
 #ifndef BYTEDEFS_H
 #define BYTEDEFS_H
 
-typedef unsigned char by;
+typedef unsigned char by_t;
 
 #endif // BYTEDEFS_H

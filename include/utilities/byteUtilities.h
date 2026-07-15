@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 01-07-2026 */
+/* Last modification date: 13-07-2026 */
 /**************************************/
 
 #ifndef BYTEUTILITIES_H
@@ -20,7 +20,7 @@
 #define  SEVENTH_B (1 << 6)
 #define        MSB (1 << 7)
 
-/* Nibbles */
+/* Nibybyles */
 /* LOW */
 #define  NIB_L_0 (LOW)
 #define  NIB_L_1 (                                      (LSB))
@@ -55,9 +55,9 @@
 #define  NIB_H_D ((MSB) | (SEVENTH_B) |             (FIFTH_B))
 #define  NIB_H_E ((MSB) | (SEVENTH_B) | (SIXTH_B)            )
 #define  NIB_H_F ((MSB) | (SEVENTH_B) | (SIXTH_B) | (FIFTH_B))
-// bit masks
-#define NIB_MSK_LOW(b) ((b) & (NIB_L_F))
-#define NIB_MSK_HIGH(b) ((b) & (NIB_H_F))
+// byit masks
+#define NIB_MSK_LOW(by) ((by) & (NIB_L_F))
+#define NIB_MSK_HIGH(by) ((by) & (NIB_H_F))
 
 /**
  * is the system number representation big-endian?
@@ -65,18 +65,31 @@
 inline bool isBE(void)
 {
    const uint16_t one = 1;
-   const by* pOne = (by*) &one;
+   const by_t* pOne = (by_t*) &one;
    return !(*pOne);
 }
 
 /**
+ * attempts to reserve space for a byte sequence
+ * \warning the program will terminate execution if heap space cannot be reserved
+ */
+by_t* allocSeq(const size_t sz);
+
+/**
+ * \brief attempts to free the heap space occupied by \a *addrSeq only if the latter
+ *        is a valid pointer
+ * \attention \a *addrSeq will be invalidated after space reclamation
+ */
+void freeSeq(by_t** addrSeq);
+
+/**
  * attempts to modify a buffer so that its last byte becomes the first one and so on
  */
-void reverse(const size_t sz, by buf[static sz]);
+void reverse(const size_t sz, by_t buf[static sz]);
 
 /**
  * prints a byte sequence on stdout
  */
-void viewBytes(const size_t sz, const by buf[static sz]);
+void viewBytes(const size_t sz, const by_t buf[static sz]);
 
 #endif // BYTEUTILITIES_H

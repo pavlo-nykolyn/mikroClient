@@ -7,9 +7,9 @@
 
 /**
  * \file
- * includes OS-specific header files used by the source files that implement an interface for communication
+ * includes OS-specific header files used by_t the source files that implement an interface for communication
  * over sockets
- * simplifies Makefile creation by wrapping headers belonging to different operating systems
+ * simplifies Makefile creation by_t wrapping headers byelonging to different operating systems
  */
 
 #if defined(__unix) || defined(__unix__)
