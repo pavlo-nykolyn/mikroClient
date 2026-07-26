@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 15-07-2026 */
+/* Last modification date: 26-07-2026 */
 /**************************************/
 
 #include <stdlib.h>
@@ -144,8 +144,7 @@ size_t mikro_Word_decodeSz(const by_t* restrict mikro_encSz,
 void mikro_Word_decode(const size_t mikro_senSz, const by_t mikro_sen[static mikro_senSz],
                        int* restrict mikro_pType)
 {
-   if (mikro_senSz &&
-       *mikro_sen) { // this condition is needed to avoid processing the empty word
+   if (mikro_senSz) { 
       unsigned nBytes = 0;
       const size_t encSz = mikro_Word_decodeSz(mikro_sen,
                                                &nBytes);
@@ -153,7 +152,8 @@ void mikro_Word_decode(const size_t mikro_senSz, const by_t mikro_sen[static mik
       char msg[encSz + 1];
       memcpy(msg, mikro_sen + nBytes, encSz);
       msg[encSz] = LOW;
-      mikro_Log_show(stdout, "mikro_W:", msg);
+      if (encSz) // the empty word will not be appended to the output
+         mikro_Log_show(stdout, "mikro_W", msg);
       if (mikro_pType &&
           (*mikro_pType == mikro_numRepT))
          // even when multiple words are part of the reply sentence, only the first one will "tag" the sentence
