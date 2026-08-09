@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 16-07-2026 */
+/* Last modification date: 09-08-2026 */
 /**************************************/
 
 #include <stdio.h>
@@ -270,6 +270,7 @@ int main(int argc, void** argv)
                                                      mikro_Cli_getArgValue(pVal),
                                                      mikro_wt_attribute,
                                                      &cd);
+      attrWCnt ++;
       if (cd)
          exit(EXIT_FAILURE);
    }
