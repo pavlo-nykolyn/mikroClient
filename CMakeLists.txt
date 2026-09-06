@@ -146,6 +146,6 @@ if(IS_DIRECTORY ${HEADER_LOCATION} AND IS_DIRECTORY ${SRC_LOCATION})
                          PRIVATE err_system
                          PRIVATE mikro_messages)
 else()
-   message(FATAL_ERROR "${HEADER_LOCATION} is not a valid directory")
+   message(FATAL_ERROR "either ${HEADER_LOCATION} or ${SRC_LOCATION} is not a valid directory")
 endif()
    

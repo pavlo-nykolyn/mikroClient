@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 09-08-2026 */
+/* Last modification date: 06-09-2026 */
 /**************************************/
 
 #include <stdio.h>
@@ -19,6 +19,7 @@ static const char mikro_loginCmd[] = "/login"; // an implicit command run as the
 
 // a sequence of keys that are to be used by the CLI interface
 enum mikro_keyList {
+                    mikro_key_help, /**< concatenates the command synopsis to the output stream and exits */
                     mikro_key_aDir, /**< directory containing authentication data used during the TLS handshake */
                     mikro_key_keyF, /**< file name associated with the key used during the TLS handshake */
                     mikro_key_crtF, /**< file name associated with the certificate used during the TLS handshake */
@@ -33,6 +34,7 @@ enum mikro_keyList {
                    };
 
 static const char* mikro_expected_keys[mikro_numKeys] = {
+                                                         [mikro_key_help] = "help",
                                                          [mikro_key_aDir] = "authentication-data-directory",
                                                          [mikro_key_keyF] = "key-file",
                                                          [mikro_key_crtF] = "crt-file",
@@ -44,6 +46,27 @@ static const char* mikro_expected_keys[mikro_numKeys] = {
                                                          [mikro_key_attN] = "attribute-name",
                                                          [mikro_key_attV] = "attribute-value"
                                                         };
+
+static void mikro_help(void)
+{
+   fputs("\n\
+^^^SYNOPSIS^^^\n\
+\n\
+mikroClient [--help]\n\
+--host=<host>\n\
+--port=<port>\n\
+--name=<username>\n\
+--password=<password>\n\
+--command=<command>\n\
+[--attribute-name=<identifier>{ --attribute-name=<identifier>}]\n\
+[--attribute-value=<token>{ --attribute-value=<token>}]\n\
+\n\
+some important notes:\n\
+* any API call SHALL always be authenticated;\n\
+* currently, a connection established toward the 8729 TCP port will not yield anything;\n\
+* an attribute name cannot be defined without the corresponding attribute value and viceversa. Though, the options themselves may be value-less;\n\
+* the first character of <command> shall be a slash; if <command> contains white-space characters, the --command option shall be quoted.\n", stdout);
+}
 
 // provides a realloc-like behaviour (only if oldSz is non-zero)
 static by_t* mikro_allocByteSeq(const size_t newSz,
@@ -108,7 +131,9 @@ static size_t mikro_readSeq(const phy_Sck_socketD mikro_sDesc,
 static enum mikro_keyList mikro_chkKey(const char* restrict mikro_pChArr)
 {
    enum mikro_keyList kInd = mikro_numKeys;
-   if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_keyF]))
+   if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_help]))
+      kInd = mikro_key_help;
+   else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_keyF]))
       kInd = mikro_key_keyF;
    else if (!strcmp(mikro_pChArr, mikro_expected_keys[mikro_key_crtF]))
       kInd = mikro_key_crtF;
@@ -185,6 +210,11 @@ int main(int argc, void** argv)
       if (!pItem)
          return EXIT_FAILURE;
       kInd = mikro_chkKey(mikro_String_getPChArr(mikro_Cli_getArgName(pItem)));
+      /* is the invocation a help request? */
+      if (kInd == mikro_key_help) {
+         mikro_help();
+         goto MIKRO_CLEANUP;
+      }
       if (kInd == mikro_numKeys) {
          mikro_Log_append_withStr(stdout, __LINE__ - 2, "progErr", mikro_messages[mikro_ind_wrCLIOpt], concatArg.pChArr);
          exit(EXIT_FAILURE);

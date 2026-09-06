@@ -1,6 +1,6 @@
 /**************************************/
 /* Author: Pavlo Nykolyn              */
-/* Last modification date: 26-07-2026 */
+/* Last modification date: 06-09-2026 */
 /**************************************/
 
 #include <stdlib.h>
@@ -111,21 +111,21 @@ size_t mikro_Word_decodeSz(const by_t* restrict mikro_encSz,
    by_t lenInd = LOW; // a length indicator that is to be inhibited during decoding
    by_t tmp[MIKRO_WORD_MAXLEN_SZ - 1] = {LOW}; // the maximum amount of bytes used to encode the length cannot exceed four units
    if (*mikro_encSz & MSB) {
-      if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_2)) & (MIKRO_WORD_LEN_IND_2))) {
-         nBytes = 2;
-         lenInd = MIKRO_WORD_LEN_IND_2;
-      }
-      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_3)) & (MIKRO_WORD_LEN_IND_3))) {
-         nBytes = 3;
-         lenInd = MIKRO_WORD_LEN_IND_3;
+      if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_5)) & (MIKRO_WORD_LEN_IND_5))) {
+         nBytes = 4;
+         fSkip = true;
       }
       else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_4)) & (MIKRO_WORD_LEN_IND_4))) {
          nBytes = 4;
          lenInd = MIKRO_WORD_LEN_IND_4;
       }
-      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_5)) & (MIKRO_WORD_LEN_IND_5))) {
-         nBytes = 4;
-         fSkip = true;
+      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_3)) & (MIKRO_WORD_LEN_IND_3))) {
+         nBytes = 3;
+         lenInd = MIKRO_WORD_LEN_IND_3;
+      }
+      else if (!((*mikro_encSz ^ (MIKRO_WORD_LEN_IND_2)) & (MIKRO_WORD_LEN_IND_2))) {
+         nBytes = 2;
+         lenInd = MIKRO_WORD_LEN_IND_2;
       }
    }
    else

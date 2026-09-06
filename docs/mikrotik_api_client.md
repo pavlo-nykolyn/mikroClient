@@ -20,3 +20,14 @@ Finally, *phy\_socket* provides the socket interface (based on Berkley sockets t
 with few modifications for the Windows-based interface) through which packets
 are first written as commands and then read as replies. Finally, *mikro\_word* also
 provides a recursive decoding feature for the replies.
+
+## Test suite
+
+I've launched the program without a proper test suite for several features of the program. I've rectified this grievous mistake
+by adding the mikro_validation module within the validation sub-directory. The list file found within the directory can be used
+to build the test suite. The resulting mikroValidator executable can be used to run the suite. If an assertion fails, than something
+must be wrong.
+Currently, only the following functions are interested by the suite:
+
+- _mikro\_Word\_decodeSz_ ;
+- _mikro\_word\_encodeSz_ (I haven't exposed it within the module interface so, I commented out the suite code I wrote for it)

@@ -33,6 +33,7 @@ any CLI argument has the following format: --<option-name>\[=<option-value>\]
 
 | option | value |
 | --- | --- |
+| help | concatenates the command synopsis to the current output stream and terminates execution, regardless of any other inserted option |
 | authentication-data-dir | directory that will contain data necessary for the TLS handshake (currently unused) |
 | key-file | file name of the public key used during the TLS handshake (currently unused) |
 | crt-file | file name of the certificate used during the TLS handshake (currently unused) |
